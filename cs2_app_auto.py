@@ -1,35 +1,30 @@
 import streamlit as st
 import numpy as np
 
-# Dummy model to simulate prediction based on team/player stats
-def predict_match(team1, team2):
+# Placeholder for auto-fetching match logic (replace with real API later)
+matches = [
+    {"team1": "Team Vitality", "team2": "G2 Esports", "stats": [62, 1.12, 74, 1.08, 58, 1.08, 72, 1.05]},
+    {"team1": "NaVi", "team2": "Astralis", "stats": [57, 1.10, 70, 1.04, 53, 1.06, 68, 1.02]}
+]
+
+def predict(stats):
+    t1_wr, t1_rt, t1_kast, t1_imp, t2_wr, t2_rt, t2_kast, t2_imp = stats
     score = (
-        0.4 * (team1['winrate'] - team2['winrate']) +
-        0.2 * (team1['adr'] - team2['adr']) +
-        0.2 * (team1['kast'] - team2['kast']) +
-        0.2 * (team1['impact'] - team2['impact'])
+        0.4 * (t1_wr - t2_wr) +
+        0.2 * (t1_rt - t2_rt) * 100 +
+        0.2 * (t1_kast - t2_kast) +
+        0.2 * (t1_imp - t2_imp) * 100
     )
     prob = 1 / (1 + np.exp(-score / 100))
     return round(prob * 100, 2), round((1 - prob) * 100, 2)
 
-st.set_page_config(page_title="CS2 Predictor", page_icon="🎯")
-st.title("🎯 CS2 Match Predictor (Manual Input v1)")
+st.set_page_config(page_title="CS2 Predictor", page_icon="🔮")
+st.title("🔮 CS2 Match Predictor (Auto Fetch – Simulated)")
 
-st.header("Team 1 Stats")
-t1_winrate = st.slider("Last Month Winrate (%)", 0, 100, 60)
-t1_adr = st.slider("Team 1 ADR", 50, 120, 85)
-t1_kast = st.slider("Team 1 KAST (%)", 50, 100, 75)
-t1_impact = st.slider("Team 1 HLTV Impact Rating", 0.5, 2.0, 1.1)
+st.markdown("Click a match below to see predicted win chances based on recent form and player stats.")
 
-st.header("Team 2 Stats")
-t2_winrate = st.slider("Last Month Winrate (%)", 0, 100, 55)
-t2_adr = st.slider("Team 2 ADR", 50, 120, 80)
-t2_kast = st.slider("Team 2 KAST (%)", 50, 100, 70)
-t2_impact = st.slider("Team 2 HLTV Impact Rating", 0.5, 2.0, 1.0)
-
-if st.button("🔮 Predict Outcome"):
-    team1 = {'winrate': t1_winrate, 'adr': t1_adr, 'kast': t1_kast, 'impact': t1_impact}
-    team2 = {'winrate': t2_winrate, 'adr': t2_adr, 'kast': t2_kast, 'impact': t2_impact}
-    p1, p2 = predict_match(team1, team2)
-    st.success(f"Team 1 win chance: {p1}%")
-    st.success(f"Team 2 win chance: {p2}%")
+for match in matches:
+    if st.button(f"{match['team1']} vs {match['team2']}"):
+        p1, p2 = predict(match['stats'])
+        st.success(f"{match['team1']} win chance: {p1}%")
+        st.success(f"{match['team2']} win chance: {p2}%")
