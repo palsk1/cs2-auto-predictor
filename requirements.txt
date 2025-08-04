@@ -1,2 +1,3 @@
 streamlit
-hltv-async-api
+requests
+beautifulsoup4
