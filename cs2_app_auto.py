@@ -1,15 +1,19 @@
 import streamlit as st
 import requests
 import numpy as np
+import traceback
 
 MATCHES_URL = "https://hltv-api.vercel.app/api/matches"
 
 def fetch_matches():
     try:
-        res = requests.get(MATCHES_URL)
-        return res.json() if res.status_code == 200 else []
-    except:
-        return []
+        res = requests.get(MATCHES_URL, timeout=10)
+        if res.status_code == 200:
+            return res.json(), None
+        else:
+            return None, f"HTTP {res.status_code}: {res.text}"
+    except Exception as e:
+        return None, traceback.format_exc()
 
 def fake_fetch_team_stats(team):
     return {
@@ -37,36 +41,37 @@ def form_text(form_list):
 
 st.set_page_config(page_title="CS2 Predictor", page_icon="🎯")
 st.title("🎯 CS2 Auto Match Predictor")
-matches = fetch_matches()
 
+matches, error = fetch_matches()
 if not matches:
-    st.warning("Failed to load matches.")
-else:
-    for m in matches[:5]:
-        team1 = m.get("team1", {}).get("name", "Team A")
-        team2 = m.get("team2", {}).get("name", "Team B")
-        match_time = m.get("date")
-        if st.button(f"{team1} vs {team2}"):
-            stats1 = fake_fetch_team_stats(team1)
-            stats2 = fake_fetch_team_stats(team2)
-            p1, p2 = predict(stats1, stats2)
+    st.error("❌ Failed to fetch real matches from HLTV API.")
+    if error:
+        st.code(error, language="bash")
+    st.stop()
 
-            st.markdown(f"## 🔮 Prediction")
-            st.success(f"**{team1}** win chance: {p1}%")
-            st.error(f"**{team2}** win chance: {p2}%")
+for m in matches[:5]:
+    team1 = m.get("team1", {}).get("name", "Team A")
+    team2 = m.get("team2", {}).get("name", "Team B")
+    if st.button(f"{team1} vs {team2}"):
+        stats1 = fake_fetch_team_stats(team1)
+        stats2 = fake_fetch_team_stats(team2)
+        p1, p2 = predict(stats1, stats2)
 
-            st.markdown("### 📊 View More")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**{team1}**")
-                st.write(stats1)
-                st.text("Form: " + form_text(stats1['form']))
-            with col2:
-                st.markdown(f"**{team2}**")
-                st.write(stats2)
-                st.text("Form: " + form_text(stats2['form']))
+        st.markdown(f"## 🔮 Prediction")
+        st.success(f"**{team1}** win chance: {p1}%")
+        st.error(f"**{team2}** win chance: {p2}%")
 
-            diff = p1 - p2
-            if abs(diff) > 10:
-                better_team = team1 if p1 > p2 else team2
-                st.markdown(f"💡 **{better_team} is strongly favored by the model.**")
+        st.markdown("### 📊 View More")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**{team1}**")
+            st.write(stats1)
+            st.text("Form: " + form_text(stats1['form']))
+        with col2:
+            st.markdown(f"**{team2}**")
+            st.write(stats2)
+            st.text("Form: " + form_text(stats2['form']))
+
+        if abs(p1 - p2) > 10:
+            better = team1 if p1 > p2 else team2
+            st.markdown(f"💡 **{better} is favored by the model.**")
